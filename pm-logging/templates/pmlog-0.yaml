@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pmlog-0
+  namespace: pm-logging
+  labels:
+    app: pmlog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pmlog
+  template:
+    metadata:
+      labels:
+        app: pmlog
+    spec:
+      containers:
+      - name: pmlog
+        image: nexus3.o-ran-sc.org:10001/o-ran-sc/nonrtric-plt-pmlog:1.0.0
+        env:
+        - name: APP_INFLUX_ACCESSTOKEN
+          valueFrom:
+            secretKeyRef:
+              name: influxdb-secret
+              key: influx-token
+        volumeMounts:
+        - name: token-cache-volume
+          mountPath: /token-cache
+        - name: config-volume
+          mountPath: /opt/app/pmlog-service/config
+      volumes:
+      - name: token-cache-volume
+        persistentVolumeClaim:
+          claimName: pm-token-cache-pvc
+      - name: config-volume
+        configMap:
+          name: pmlog-config
+

@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pmlog-config
+  namespace: pm-logging
+data:
+  application.yaml: |
+    spring:
+      profiles:
+        active: prod
+      main:
+        allow-bean-definition-overriding: true
+      aop:
+        auto: false
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: "loggers,logfile,health,info,metrics,threaddump,heapdump,shutdown"
+      endpoint:
+        shutdown:
+          enabled: true
+    lifecycle:
+      timeout-per-shutdown-phase: "20s"
+    springdoc:
+      show-actuator: true
+    logging:
+      level:
+        ROOT: WARN
+        org.apache.kafka: WARN
+        org.springframework: ERROR
+        org.springframework.data: TRACE
+        org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+        org.oran.pmlog: TRACE
+      pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level]  %logger{20} - %msg%n"
+        file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level]  %logger{20} - %msg%n"
+      file:
+        name: /var/log/pmlog-service/application.log
+    server:
+      port: 8436
+      http-port: 8084
+      ssl:
+        key-store-type: JKS
+        key-store-password: policy_agent
+        key-store: /opt/app/pmlog-service/etc/cert/keystore.jks
+        key-password: policy_agent
+        key-alias: policy_agent
+      shutdown: "graceful"
+    app:
+      webclient:
+        trust-store-used: false
+        trust-store-password: policy_agent
+        trust-store: /opt/app/pmlog-service/etc/cert/truststore.jks
+        http.proxy-host:
+        http.proxy-port: 0
+      kafka:
+        bootstrap-servers: kafka:9097
+        input-topic:
+        max-poll-records: 500
+        group-id: kafkaGroupId
+        client-id: kafkaClientId
+        use-oath-token: true
+        ssl:
+          key-store-type: PEM
+          key-store-location:
+          key-store-password:
+          trust-store-type: PEM
+          trust-store-location:
+      influx:
+        url: http://influxdb2:8086
+        access-token:
+        bucket: pm-logg-bucket
+        org: iosmcn
+        user:
+        password:
+        database:
+      ics-base-url: http://ics:8083
+      consumer-job-id: "pmlog"
+      auth-token-file: /token-cache/jwt.txt
+  jobDefinition.json: |
+    {
+       "info_type_id": "PmDataOverKafka",
+       "job_id":"pmLogger",
+       "job_owner": "owner",
+       "job_definition": {
+          "filter": {
+             "sourceNames": [],
+             "measObjInstIds": [],
+             "measTypeSpecs": [],
+             "measuredEntityDns": []
+          },
+          "deliveryInfo": {
+             "topic": "pmreports",
+             "bootStrapServers": "kafka:9097"
+          }
+       }
+    }
+

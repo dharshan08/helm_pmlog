@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-token-file-pmlog-0
+  namespace: pm-logging
+  labels:
+    app: auth-token-fetch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-token-fetch
+  template:
+    metadata:
+      labels:
+        app: auth-token-fetch
+    spec:
+      containers:
+      - name: auth-token-fetch
+        image: nexus3.o-ran-sc.org:10001/o-ran-sc/nonrtric-plt-auth-token-fetch:1.1.1
+        env:
+        - name: CREDS_GRANT_TYPE
+          value: "client_credentials"
+        - name: CREDS_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secret
+              key: client-secret
+        - name: CREDS_CLIENT_ID
+          value: "nrt-pm-log"
+        - name: AUTH_SERVICE_URL
+          value: "http://keycloak.pm-logging.svc:8080/realms/nonrtric-realm/protocol/openid-connect/token"
+        - name: OUTPUT_FILE
+          value: "/token-cache/jwt.txt"
+        volumeMounts:
+        - name: token-cache-volume
+          mountPath: /token-cache
+      volumes:
+      - name: token-cache-volume
+        persistentVolumeClaim:
+          claimName: pm-token-cache-pvc
+
